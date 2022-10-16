@@ -11,7 +11,7 @@
 ///
 /// @file
 
-#include <cldnn/cldnn_config.hpp>
+#include "time.h"
 #include <gpu/gpu_context_api_va.hpp>
 #include <openvino/openvino.hpp>
 #include <openvino/runtime/intel_gpu/ocl/va.hpp>
@@ -40,10 +40,10 @@ using namespace ov::preprocess;
 
 void Usage(void) {
     printf("\n");
-    printf("   Usage  :  advanced-decvpp-infer \n\n");
+    printf("   Usage  :  infer-decode \n\n");
     printf("     -i      input file name (HEVC elementary stream)\n\n");
     printf("     -m      input model name (object detection)\n\n");
-    printf("   Example:  advanced-decvpp-infer -i in.h265 -m mobilenet-ssd.xml\n");
+    printf("   Example:  ./infer-decode -i in.h265 -m mobilenet-ssd.xml\n");
     return;
 }
 
@@ -206,6 +206,7 @@ int main(int argc, char **argv) {
     // Create infer request
     infer_request = compiled_model.create_infer_request();
 
+    clock_t start = clock();
     printf("Decoding VPP, and infering %s with %s\n", cliParams.infileName, cliParams.inmodelName);
     while (isStillGoing == true) {
         if (isDrainingDec == false) {
@@ -282,7 +283,8 @@ int main(int argc, char **argv) {
                 break;
         }
     }
-
+    clock_t end = clock();
+    std::cout<<"time = "<<double(end-start)/CLOCKS_PER_SEC<<"s"<<std::endl;
     printf("Decoded %d frames\n", frameNum);
 
     if (bitstream.Data)
