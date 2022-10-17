@@ -187,7 +187,8 @@ int main(int argc, char **argv)
         }
 
         if (!isDrainingVPP)
-        {
+        {   
+            // Run decode with onevpl
             sts = onevpl_decode(session,
                                 (isDrainingDec) ? NULL : &bitstream,
                                 NULL,
@@ -202,6 +203,7 @@ int main(int argc, char **argv)
         switch (sts)
         {
         case MFX_ERR_NONE:
+            // Run vpp with onevpl
             sts =
                 onevpl_vpp(session, pmfxDecOutSurface, &pmfxVPPSurfacesOut);
             if (sts == MFX_ERR_NONE)
@@ -224,7 +226,7 @@ int main(int argc, char **argv)
                 // Wrap VPP output into remoteblobs
                 auto nv12_blob = shared_va_context.create_tensor_nv12(height, width, lvaSurfaceID);
 
-                // Run inference
+                // Run inference with openvino
                 float *result = openvino_infer(nv12_blob, model, infer_request);
 
                 // Release surface
