@@ -13,7 +13,7 @@ if(WIN32)
 endif()
 
 set(TARGET infer-decode)
-set(SOURCES src/infer-decode.cpp)
+set(SOURCES src/main.cpp)
 
 # Set default build type to RelWithDebInfo if not specified
 if(NOT CMAKE_BUILD_TYPE)
@@ -26,9 +26,8 @@ if(NOT CMAKE_BUILD_TYPE)
         "Choose build type from: None Debug Release RelWithDebInfo MinSizeRel"
         FORCE)
 endif()
-
-add_executable(${TARGET} ${SOURCES})
-
+aux_source_directory(src SRC)
+add_executable(${TARGET} ${SOURCES} ${SRC})
 find_package(VPL REQUIRED)
 target_link_libraries(${TARGET} VPL::dispatcher)
 
@@ -99,7 +98,3 @@ if(OpenCL_FOUND)
 else()
   message(SEND_ERROR "OpenCL not found")
 endif()
-
-SET(CMAKE_BUILD_TYPE "Debug")
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")

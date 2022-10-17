@@ -49,7 +49,12 @@ enum {
 #define VERIFY(x, y)       \
     if (!(x)) {            \
         printf("%s\n", y); \
-        goto end;          \
+    }
+
+#define VERIFY2(x, y)      \
+    if (!(x)) {            \
+        printf("%s\n", y); \
+        return NULL;       \
     }
 
 #define ALIGN16(value)           (((value + 15) >> 4) << 4)

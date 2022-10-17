@@ -16,7 +16,6 @@ RUN wget https://repositories.intel.com/graphics/intel-graphics.key && \
     apt update && \
     apt install -y libmfx1 libmfxgen1 vainfo intel-opencl-icd intel-level-zero-gpu level-zero intel-media-va-driver-non-free python3.9
 
-
 # Dev packages (optional for run-only environments)
 RUN apt install -y cmake build-essential libva-dev libdrm-dev net-tools pkg-config libigc-dev intel-igc-cm libigdfcl-dev libigfxcmrt-dev level-zero-dev opencl-headers build-essential
 
