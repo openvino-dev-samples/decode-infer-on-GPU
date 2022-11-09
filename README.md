@@ -91,7 +91,7 @@ omz_downloader -m vehicle-detection-0200
 - -nr = Number inference requests;
 - -fr = Number of frame to be decoded for each input source;
 
-Tips: Since the sample has set the number of stream as 1, the number of infer request should be larger than 1.
+Tips: Since the sample has been set the number of stream as 1, the number of infer request should be larger than 1.
 
 ## Example of Output
 In this sample, you will get the inference result according to stream id of input source.
