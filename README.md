@@ -1,5 +1,5 @@
 # decode_infer-on-GPU
-This sample shows how to use the oneAPI Video Processing Library (oneVPL) to perform a single and mulit-source video decode and preprocess and inference using OpenVINO to show the device surface sharing (zero copy), modified from the example in (oneVPL)[https://github.com/oneapi-src/oneVPL/tree/master/examples].
+This sample shows how to use the oneAPI Video Processing Library (oneVPL) to perform a ***single and mulit-source*** video decode and preprocess and inference using OpenVINO to show the device surface sharing (zero copy), modified from the example in (oneVPL)[https://github.com/oneapi-src/oneVPL/tree/master/examples].
 
 ![onevpl](https://user-images.githubusercontent.com/91237924/195313571-cfd0fa36-74d5-4097-8c92-a78134462a22.png)
 
@@ -76,11 +76,11 @@ omz_downloader -m vehicle-detection-0200
 ```
 
 ### Run the program
-- for single source 
+- For single source 
 ```
 ./single_src/single_source -i ../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml 
 ```
-- for single source 
+- For single source 
 ```
 ./multi_src/multi_source -i ../content/cars_320x240.h265,../content/cars_320x240.h265,../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml 
 ```
