@@ -82,8 +82,16 @@ omz_downloader -m vehicle-detection-0200
 ```
 - For single source 
 ```
-./multi_src/multi_source -i ../content/cars_320x240.h265,../content/cars_320x240.h265,../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml 
+./multi_src/multi_source -i ../content/cars_320x240.h265,../content/cars_320x240.h265,../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml -bz 2 -nr 4
 ```
+
+- -i = Path to one or multiple input video files, separated by comma;
+- -m = Path to IR .xml file;
+- -bs = Batch size;
+- -nr = Number inference requests;
+- -fr = Number of frame to be decoded for each input source;
+
+Tips: Since the sample has set the number of stream as 1, the number of infer request should be larger than 1.
 
 ## Example of Output
 In this sample, you will get the inference result according to stream id of input source.
