@@ -1,5 +1,5 @@
 # decode_infer-on-GPU
-This sample shows how to use the oneAPI Video Processing Library (oneVPL) to perform a simple video decode and preprocess and inference using OpenVINO to show the device surface sharing (zero copy), modified from the example in (oneVPL)[https://github.com/oneapi-src/oneVPL/tree/master/examples].
+This sample shows how to use the oneAPI Video Processing Library (oneVPL) to perform a single and mulit-source video decode and preprocess and inference using OpenVINO to show the device surface sharing (zero copy), modified from the example in (oneVPL)[https://github.com/oneapi-src/oneVPL/tree/master/examples].
 
 ![onevpl](https://user-images.githubusercontent.com/91237924/195313571-cfd0fa36-74d5-4097-8c92-a78134462a22.png)
 
@@ -41,7 +41,7 @@ wget https://repositories.intel.com/graphics/intel-graphics.key && \
 ### Install Dev package
 ```shell
 apt install -y cmake build-essential libva-dev libdrm-dev net-tools pkg-config libigc-dev intel-igc-cm libigdfcl-dev libigfxcmrt-dev level-zero-dev opencl-headers build-essential
-```shell
+```
 
 ### Install oneVPL devkit package from oneAPI
 ```shell
@@ -76,16 +76,18 @@ omz_downloader -m vehicle-detection-0200
 ```
 
 ### Run the program
+- for single source 
 ```
-./infer-decode -i ../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml 
+./single_src/single_source -i ../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml 
+```
+- for single source 
+```
+./multi_src/multi_source -i ../content/cars_320x240.h265,../content/cars_320x240.h265,../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml 
 ```
 
 ## Example of Output
+In this sample, you will get the inference result according to stream id of input source.
 ```
-libva info: VA-API version 1.12.0
-libva info: Trying to open /opt/intel/mediasdk/lib64/iHD_drv_video.so
-libva info: Found init function __vaDriverInit_1_12
-libva info: va_openDriver() returns 0
 libva info: VA-API version 1.12.0
 libva info: Trying to open /opt/intel/mediasdk/lib64/iHD_drv_video.so
 libva info: Found init function __vaDriverInit_1_12
@@ -96,15 +98,27 @@ Implementation details:
   AccelerationMode via: VAAPI
   Path: /usr/lib/x86_64-linux-gnu/libmfx-gen.so.1.2.7
 
-libva info: VA-API version 1.12.0
-libva info: Trying to open /opt/intel/mediasdk/lib64/iHD_drv_video.so
-libva info: Found init function __vaDriverInit_1_12
-libva info: va_openDriver() returns 0
-Decoding VPP, and infering ../content/cars_320x240.h265 with /home/ethan/oneVPL/examples/interop/advanced-decvpp-infer/intel/vehicle-detection-0200/FP16/vehicle-detection-0200.xml
-[0,0] element, prob = 0.998047    (205,49)-(296,144) batch id : 0 WILL BE PRINTED!
-[1,0] element, prob = 0.996094    (91,115)-(198,221) batch id : 0 WILL BE PRINTED!
-[2,0] element, prob = 0.985352    (36,44)-(111,134) batch id : 0 WILL BE PRINTED!
-[3,0] element, prob = 0.975098    (77,72)-(154,164) batch id : 0 WILL BE PRINTED!
-[4,0] element, prob = 0.463135    (87,99)-(178,178) batch id : 0
+Frames [stream_id=1] [stream_id=0]
+image0: bbox 204.99, 49.43, 296.43, 144.56, confidence = 0.99805
+image0: bbox 91.26, 115.56, 198.41, 221.69, confidence = 0.99609
+image0: bbox 36.50, 44.75, 111.34, 134.57, confidence = 0.98535
+image0: bbox 77.92, 72.38, 155.06, 164.30, confidence = 0.97510
+image1: bbox 204.99, 49.43, 296.43, 144.56, confidence = 0.99805
+image1: bbox 91.26, 115.56, 198.41, 221.69, confidence = 0.99609
+image1: bbox 36.50, 44.75, 111.34, 134.57, confidence = 0.98535
+image1: bbox 77.92, 72.38, 155.06, 164.30, confidence = 0.97510
+Frames [stream_id=1] [stream_id=0]
+image0: bbox 206.96, 50.41, 299.54, 146.23, confidence = 0.99805
+image0: bbox 93.81, 115.29, 200.86, 222.94, confidence = 0.99414
+image0: bbox 84.15, 92.91, 178.14, 191.82, confidence = 0.99316
+image0: bbox 37.78, 45.82, 113.29, 132.28, confidence = 0.98193
+image0: bbox 75.96, 71.88, 154.31, 164.54, confidence = 0.96582
+image1: bbox 206.96, 50.41, 299.54, 146.23, confidence = 0.99805
+image1: bbox 93.81, 115.29, 200.86, 222.94, confidence = 0.99414
+image1: bbox 84.15, 92.91, 178.14, 191.82, confidence = 0.99316
+image1: bbox 37.78, 45.82, 113.29, 132.28, confidence = 0.98193
+image1: bbox 75.96, 71.88, 154.31, 164.54, confidence = 0.96582
 ...
+decoded and infered 60 frames
+Time = 0.328556s
 ```
