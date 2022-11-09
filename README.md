@@ -80,7 +80,7 @@ omz_downloader -m vehicle-detection-0200
 ```
 ./single_src/single_source -i ../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml 
 ```
-- For single source 
+- For multiple source 
 ```
 ./multi_src/multi_source -i ../content/cars_320x240.h265,../content/cars_320x240.h265,../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml -bz 2 -nr 4
 ```
