@@ -43,6 +43,9 @@ wget https://repositories.intel.com/graphics/intel-graphics.key && \
 apt install -y cmake build-essential libva-dev libdrm-dev net-tools pkg-config libigc-dev intel-igc-cm libigdfcl-dev libigfxcmrt-dev level-zero-dev opencl-headers build-essential
 ```
 
+Or you can follow this instruction to install the package for a discrete GPU device.
+https://dgpu-docs.intel.com/index.html
+
 ### Install oneVPL devkit package from oneAPI
 ```shell
 wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
