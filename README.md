@@ -72,7 +72,7 @@ cmake --build .
 ### Download test model
 Download the vehicle detection model from OpenVINO model zoo
 ```
-omz_downloader -m vehicle-detection-0200
+omz_downloader --name vehicle-detection-0200
 ```
 
 ### Run the program
