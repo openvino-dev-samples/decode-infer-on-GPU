@@ -82,7 +82,7 @@ omz_downloader --name vehicle-detection-0200
 ```
 - For multiple source 
 ```
-./multi_src/multi_source -i ../content/cars_320x240.h265,../content/cars_320x240.h265,../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml -bz 2 -nr 4
+./multi_src/multi_source -i ../content/cars_320x240.h265,../content/cars_320x240.h265,../content/cars_320x240.h265 -m ~/vehicle-detection-0200/FP32/vehicle-detection-0200.xml -bs 2 -nr 4
 ```
 
 - -i = Path to one or multiple input video files, separated by comma;
