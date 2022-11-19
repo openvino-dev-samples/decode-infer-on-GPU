@@ -29,7 +29,8 @@ DEFINE_string(i, "",
 DEFINE_string(m, "", "Required. Path to IR .xml file");
 // DEFINE_string(device, "GPU", "Device for decode and inference, 'CPU' or 'GPU'");
 DEFINE_int32(bs, 2, "Batch size");
-DEFINE_int32(nr, 4, "Number inference requests");
+DEFINE_int32(nr, 4, "Number of inference requests");
+DEFINE_int32(ns, 1, "Number of GPU streams");
 DEFINE_int32(fr, 30, "Number of frame to be decoded for each input source");
 
 int main(int argc, char *argv[])
@@ -38,23 +39,30 @@ int main(int argc, char *argv[])
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     int frameNum = 0;
 
-    //--- Setup OpenVINO Inference Engine
+    // setup OpenVINO Inference Engine
     ov::Core core;
-    // Read network model
+    
+    // configuration for Multiple streams on GPU
+    std::string key = "GPU_THROUGHPUT_STREAMS";
+    ov::AnyMap config;
+    config[key] = FLAGS_ns;
+    core.set_property("GPU", config);
+
+    // read network model
     std::shared_ptr<ov::Model> model = core.read_model(FLAGS_m);
 
-    // Get the input shape
+    // get the input shape
     auto input0 = model->get_parameters().at(0);
     auto shape = input0->get_shape();
     auto inputs = split_string(FLAGS_i);
     int num_source = inputs.size();
 
-    // Setup VPL
+    // setup VPL
     Decode_vpp decode_vpp(inputs, shape);
     auto lvaDisplay = decode_vpp.get_context();
     auto input_shape = decode_vpp.get_input_shape();
 
-    // Integrate preprocessing steps into the execution graph with Preprocessing API
+    // integrate preprocessing steps into the execution graph with Preprocessing API
     openvino_preprocess(model);
 
     if (FLAGS_bs > 1)
@@ -63,14 +71,14 @@ int main(int argc, char *argv[])
     auto shared_va_context = ov::intel_gpu::ocl::VAContext(core, lvaDisplay);
     ov::CompiledModel compiled_model = core.compile_model(model, shared_va_context);
 
-    // Create the queue for free infer request
+    // create the queue for free infer request
     BlockingQueue<ov::InferRequest> free_requests;
     for (int i = 0; i < FLAGS_nr; i++)
         free_requests.push(compiled_model.create_infer_request());
 
     clock_t start = clock();
 
-    // Reading the input data and start decoding
+    // reading the input data and start decoding
     decode_vpp.decoding(inputs);
     BlockingQueue<std::pair<std::vector<std::pair<mfxFrameSurface1 *, size_t>>, ov::InferRequest>> busy_requests;
 
@@ -96,14 +104,15 @@ int main(int argc, char *argv[])
         printf("print_tensor() thread completed\n"); });
 
     int inferedNum = 0;
-    // Frame loop
+    // frame loop
     std::vector<std::pair<mfxFrameSurface1 *, size_t>> batched_frames;
+    
     for (;;)
     {
         inferedNum++;
         if (inferedNum > FLAGS_fr * num_source) // End-Of-Stream or error
             break;
-        // FFmpeg video input, decode, resize
+        // video input, decode, resize
         auto frame = decode_vpp.read();
 
         // fill full batch
@@ -127,7 +136,7 @@ int main(int argc, char *argv[])
             uv_tensors.push_back(nv12_tensor.second);
         }
 
-        // Get inference request and start asynchronously
+        // get inference request and start asynchronously
         ov::InferRequest infer_request = free_requests.pop();
         infer_request.set_input_tensors(0, y_tensors);  // first input is batch of Y planes
         infer_request.set_input_tensors(1, uv_tensors); // second input is batch of UV planes

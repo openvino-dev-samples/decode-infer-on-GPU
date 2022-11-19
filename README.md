@@ -91,7 +91,8 @@ omz_downloader --name vehicle-detection-0200
 - -i = Path to one or multiple input video files, separated by comma;
 - -m = Path to IR .xml file;
 - -bs = Batch size;
-- -nr = Number inference requests;
+- -nr = Number of inference requests;
+- -ns = Number of GPU streams;
 - -fr = Number of frame to be decoded for each input source;
 
 Tips: Since the sample has been set the number of stream as 1, the number of infer request should be larger than 1.
