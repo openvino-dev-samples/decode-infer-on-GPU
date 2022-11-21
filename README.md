@@ -74,6 +74,7 @@ cmake --build .
 
 Tips: To trigger dGPU, you have to switch the code as below:
 https://github.com/OpenVINO-dev-contest/decode-infer-on-GPU/blob/main/multi_src/decode_vpp.h#L266
+
 from
 ```
 fd = open("/dev/dri/renderD128", O_RDWR);
