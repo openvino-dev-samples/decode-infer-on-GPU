@@ -11,7 +11,8 @@
 ///
 /// @file
 
-#include "time.h"
+#include <iostream>
+#include <chrono>
 #include <openvino/openvino.hpp>
 #include <openvino/runtime/intel_gpu/properties.hpp>
 #include <memory>
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < FLAGS_nr; i++)
         free_requests.push(compiled_model.create_infer_request());
 
-    clock_t start = clock();
+    auto t1 = std::chrono::high_resolution_clock::now();
 
     // reading the input data and start decoding
     decode_vpp.decoding(inputs);
@@ -150,7 +151,8 @@ int main(int argc, char *argv[])
     busy_requests.push({});
     thread.join();
     printf("decoded and infered %d frames\n", inferedNum - 1);
-    clock_t end = clock();
-    std::cout << "Time = " << double(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
+    std::cout << "Time = " << fp_ms.count()  << "ms" << std::endl;
     return 0;
 }
