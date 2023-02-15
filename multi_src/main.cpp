@@ -11,17 +11,17 @@
 ///
 /// @file
 
-#include <iostream>
+#include <gflags/gflags.h>
 #include <chrono>
+#include <iostream>
+#include <memory>
 #include <openvino/openvino.hpp>
 #include <openvino/runtime/intel_gpu/properties.hpp>
-#include <memory>
-#include <gflags/gflags.h>
 #include <thread>
+#include "blocking_queue.h"
+#include "decode_vpp.h"
 #include "utils/functions.h"
 #include "utils/util.h"
-#include "decode_vpp.h"
-#include "blocking_queue.h"
 
 using namespace multi_source;
 DEFINE_string(i, "",
@@ -34,15 +34,13 @@ DEFINE_int32(nr, 4, "Number of inference requests");
 DEFINE_int32(ns, 1, "Number of GPU streams");
 DEFINE_int32(fr, 30, "Number of frame to be decoded for each input source");
 
-int main(int argc, char *argv[])
-{
-
+int main(int argc, char* argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     int frameNum = 0;
 
     // setup OpenVINO Inference Engine
     ov::Core core;
-    
+
     // configuration for Multiple streams on GPU
     std::string key = "GPU_THROUGHPUT_STREAMS";
     ov::AnyMap config;
@@ -81,11 +79,10 @@ int main(int argc, char *argv[])
 
     // reading the input data and start decoding
     decode_vpp.decoding(inputs);
-    BlockingQueue<std::pair<std::vector<std::pair<mfxFrameSurface1 *, size_t>>, ov::InferRequest>> busy_requests;
+    BlockingQueue<std::pair<std::vector<std::pair<mfxFrameSurface1*, size_t>>, ov::InferRequest>> busy_requests;
 
     // async thread waiting for inference completion and printing inference results
-    std::thread thread([&]
-                       {
+    std::thread thread([&] {
         for (;;) {
             auto res = busy_requests.pop();
             auto batched_frames = res.first;
@@ -106,12 +103,11 @@ int main(int argc, char *argv[])
 
     int inferedNum = 0;
     // frame loop
-    std::vector<std::pair<mfxFrameSurface1 *, size_t>> batched_frames;
-    
-    for (;;)
-    {
+    std::vector<std::pair<mfxFrameSurface1*, size_t>> batched_frames;
+
+    for (;;) {
         inferedNum++;
-        if (inferedNum > FLAGS_fr * num_source) // End-Of-Stream or error
+        if (inferedNum > FLAGS_fr * num_source)  // End-Of-Stream or error
             break;
         // video input, decode, resize
         auto frame = decode_vpp.read();
@@ -124,14 +120,13 @@ int main(int argc, char *argv[])
         // zero-copy conversion from VASurfaceID to OpenVINO VASurfaceTensor (one tensor for Y plane, another for UV)
         std::vector<ov::Tensor> y_tensors;
         std::vector<ov::Tensor> uv_tensors;
-        for (auto va_surface : batched_frames)
-        {
+        for (auto va_surface : batched_frames) {
             mfxResourceType lresourceType;
             mfxHDL lresource;
             va_surface.first->FrameInterface->GetNativeHandle(va_surface.first,
                                                               &lresource,
                                                               &lresourceType);
-            VASurfaceID lvaSurfaceID = *(VASurfaceID *)(lresource);
+            VASurfaceID lvaSurfaceID = *(VASurfaceID*)(lresource);
             auto nv12_tensor = shared_va_context.create_tensor_nv12(shape[2], shape[3], lvaSurfaceID);
             y_tensors.push_back(nv12_tensor.first);
             uv_tensors.push_back(nv12_tensor.second);
@@ -139,8 +134,8 @@ int main(int argc, char *argv[])
 
         // get inference request and start asynchronously
         ov::InferRequest infer_request = free_requests.pop();
-        infer_request.set_input_tensors(0, y_tensors);  // first input is batch of Y planes
-        infer_request.set_input_tensors(1, uv_tensors); // second input is batch of UV planes
+        infer_request.set_input_tensors(0, y_tensors);   // first input is batch of Y planes
+        infer_request.set_input_tensors(1, uv_tensors);  // second input is batch of UV planes
         infer_request.start_async();
         busy_requests.push({batched_frames, infer_request});
 
@@ -153,6 +148,6 @@ int main(int argc, char *argv[])
     printf("decoded and infered %d frames\n", inferedNum - 1);
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
-    std::cout << "Time = " << fp_ms.count()  << "ms" << std::endl;
+    std::cout << "Time = " << fp_ms.count() << "ms" << std::endl;
     return 0;
 }

@@ -11,12 +11,11 @@
 ///
 /// @file
 
-#include "time.h"
+#include <gflags/gflags.h>
 #include <gpu/gpu_context_api_va.hpp>
 #include <openvino/openvino.hpp>
 #include "utils/functions.h"
 #include "utils/util.h"
-#include <gflags/gflags.h>
 
 #define BITSTREAM_BUFFER_SIZE 2000000
 #define MAX_RESULTS 5
@@ -24,27 +23,25 @@
 #define onevpl_decode MFXVideoDECODE_DecodeFrameAsync
 #define onevpl_vpp MFXVideoVPP_ProcessFrameAsync
 
-DEFINE_string(i, "",
-              "Required. Path to one input video files ");
+DEFINE_string(i, "", "Required. Path to one input video files ");
 DEFINE_string(m, "", "Required. Path to IR .xml file");
 
-mfxSession CreateVPLSession(mfxLoader *loader);
-void PrintTopResults(const float *output, mfxU16 width, mfxU16 height, ov::Shape output_shape);
+mfxSession CreateVPLSession(mfxLoader* loader);
+void PrintTopResults(const float* output, mfxU16 width, mfxU16 height, ov::Shape output_shape);
 
-int main(int argc, char **argv)
-{   
+int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
-    
-    FILE *source = NULL;
+
+    FILE* source = NULL;
     mfxLoader loader = NULL;
     mfxSession session = NULL;
-    mfxFrameSurface1 *decSurfaceOut = NULL;
+    mfxFrameSurface1* decSurfaceOut = NULL;
     mfxBitstream bitstream = {};
     mfxSyncPoint syncp = {};
     mfxVideoParam mfxDecParams = {};
     mfxVideoParam mfxVPPParams = {};
-    mfxFrameSurface1 *pmfxDecOutSurface = NULL;
-    mfxFrameSurface1 *pmfxVPPSurfacesOut = NULL;
+    mfxFrameSurface1* pmfxDecOutSurface = NULL;
+    mfxFrameSurface1* pmfxVPPSurfacesOut = NULL;
     mfxU32 frameNum = 0;
     bool isStillGoing = true;
     bool isDrainingDec = false;
@@ -97,7 +94,7 @@ int main(int argc, char **argv)
     //-- Initialize Decode
     // Prepare input bitstream
     bitstream.MaxLength = BITSTREAM_BUFFER_SIZE;
-    bitstream.Data = (mfxU8 *)calloc(bitstream.MaxLength, sizeof(mfxU8));
+    bitstream.Data = (mfxU8*)calloc(bitstream.MaxLength, sizeof(mfxU8));
     VERIFY(bitstream.Data, "Not able to allocate input buffer");
     bitstream.CodecId = MFX_CODEC_HEVC;
 
@@ -164,89 +161,77 @@ int main(int argc, char **argv)
 
     // Create infer request
     infer_request = compiled_model.create_infer_request();
-    clock_t start = clock();
+    auto t1 = std::chrono::high_resolution_clock::now();
     printf("Decoding VPP, and infering %s with %s\n", cliParams.infileName, cliParams.inmodelName);
-    while (isStillGoing == true)
-    {
-        if (isDrainingDec == false)
-        {
+    while (isStillGoing == true) {
+        if (isDrainingDec == false) {
             sts = ReadEncodedStream(bitstream, source);
             if (sts != MFX_ERR_NONE)
                 isDrainingDec = true;
         }
 
-        if (!isDrainingVPP)
-        {   
+        if (!isDrainingVPP) {
             // Run decode with onevpl
             sts = onevpl_decode(session,
                                 (isDrainingDec) ? NULL : &bitstream,
                                 NULL,
                                 &pmfxDecOutSurface,
                                 &syncp);
-        }
-        else
-        {
+        } else {
             sts = MFX_ERR_NONE;
         }
 
-        switch (sts)
-        {
-        case MFX_ERR_NONE:
-            // Run vpp with onevpl
-            sts =
-                onevpl_vpp(session, pmfxDecOutSurface, &pmfxVPPSurfacesOut);
-            if (sts == MFX_ERR_NONE)
-            {
-                sts = pmfxVPPSurfacesOut->FrameInterface->Synchronize(pmfxVPPSurfacesOut,
-                                                                      SYNC_TIMEOUT);
-                VERIFY(MFX_ERR_NONE == sts, "MFXVideoCORE_SyncOperation error");
+        switch (sts) {
+            case MFX_ERR_NONE:
+                // Run vpp with onevpl
+                sts =
+                    onevpl_vpp(session, pmfxDecOutSurface, &pmfxVPPSurfacesOut);
+                if (sts == MFX_ERR_NONE) {
+                    sts = pmfxVPPSurfacesOut->FrameInterface->Synchronize(pmfxVPPSurfacesOut,
+                                                                          SYNC_TIMEOUT);
+                    VERIFY(MFX_ERR_NONE == sts, "MFXVideoCORE_SyncOperation error");
 
-                
+                    sts = pmfxVPPSurfacesOut->FrameInterface->GetNativeHandle(pmfxVPPSurfacesOut,
+                                                                              &lresource,
+                                                                              &lresourceType);
+                    VERIFY(MFX_ERR_NONE == sts, "FrameInterface->GetNativeHandle error");
+                    VERIFY(MFX_RESOURCE_VA_SURFACE == lresourceType,
+                           "Display device is not MFX_HANDLE_VA_DISPLAY");
 
-                sts = pmfxVPPSurfacesOut->FrameInterface->GetNativeHandle(pmfxVPPSurfacesOut,
-                                                                          &lresource,
-                                                                          &lresourceType);
-                VERIFY(MFX_ERR_NONE == sts, "FrameInterface->GetNativeHandle error");
-                VERIFY(MFX_RESOURCE_VA_SURFACE == lresourceType,
-                       "Display device is not MFX_HANDLE_VA_DISPLAY");
+                    lvaSurfaceID = *(VASurfaceID*)lresource;
 
-                lvaSurfaceID = *(VASurfaceID *)lresource;
+                    // Wrap VPP output into remoteblobs
+                    auto nv12_blob = shared_va_context.create_tensor_nv12(height, width, lvaSurfaceID);
 
-                // Wrap VPP output into remoteblobs
-                auto nv12_blob = shared_va_context.create_tensor_nv12(height, width, lvaSurfaceID);
+                    // Run inference with openvino
+                    ov::Tensor result = openvino_infer(nv12_blob, model, infer_request);
+                    frameNum++;
+                    // Release surface
+                    sts = pmfxVPPSurfacesOut->FrameInterface->Release(pmfxVPPSurfacesOut);
+                    VERIFY(MFX_ERR_NONE == sts, "ERROR - mfxFrameSurfaceInterface->Release failed");
 
-                // Run inference with openvino
-                ov::Tensor result = openvino_infer(nv12_blob, model, infer_request);
-                frameNum++;
-                // Release surface
-                sts = pmfxVPPSurfacesOut->FrameInterface->Release(pmfxVPPSurfacesOut);
-                VERIFY(MFX_ERR_NONE == sts, "ERROR - mfxFrameSurfaceInterface->Release failed");
-
-                PrintSingleResults(result, oriImgWidth, oriImgHeight);
-            }
-            else if (sts == MFX_ERR_MORE_DATA)
-            {
-                if (isDrainingVPP == true)
-                    isStillGoing = false;
-            }
-            else
-            {
-                if (sts < 0)
-                    isStillGoing = false;
-            }
-            break;
-        case MFX_ERR_MORE_DATA:
-            // The function requires more bitstream at input before decoding can proceed
-            if (isDrainingDec)
-                isDrainingVPP = true;
-            break;
-        default:
-            isStillGoing = false;
-            break;
+                    PrintSingleResults(result, oriImgWidth, oriImgHeight);
+                } else if (sts == MFX_ERR_MORE_DATA) {
+                    if (isDrainingVPP == true)
+                        isStillGoing = false;
+                } else {
+                    if (sts < 0)
+                        isStillGoing = false;
+                }
+                break;
+            case MFX_ERR_MORE_DATA:
+                // The function requires more bitstream at input before decoding can proceed
+                if (isDrainingDec)
+                    isDrainingVPP = true;
+                break;
+            default:
+                isStillGoing = false;
+                break;
         }
     }
-    clock_t end = clock();
-    std::cout << "Time = " << double(end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> fp_ms = t2 - t1;
+    std::cout << "Time = " << fp_ms.count() << "ms" << std::endl;
     printf("Decoded %d frames\n", frameNum);
 
     if (bitstream.Data)

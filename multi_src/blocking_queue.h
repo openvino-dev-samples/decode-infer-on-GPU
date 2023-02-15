@@ -13,8 +13,8 @@
 namespace multi_source {
 template <typename T>
 class BlockingQueue {
-  public:
-    void push(T const &value, size_t queue_limit = 0) {
+   public:
+    void push(T const& value, size_t queue_limit = 0) {
         std::unique_lock<std::mutex> lock(_mutex);
         if (queue_limit > 0) {
             while (_queue.size() >= queue_limit) {
@@ -43,10 +43,10 @@ class BlockingQueue {
         return _queue.size();
     }
 
-  private:
+   private:
     std::deque<T> _queue;
     std::mutex _mutex;
     std::condition_variable _push_condition;
     std::condition_variable _pop_condition;
 };
-}
+}  // namespace multi_source
