@@ -1,6 +1,7 @@
 #include <gpu/gpu_context_api_va.hpp>
 #include <thread>
 #include "blocking_queue.h"
+#include "utils/util.h"
 #define MAX_QUEUE_SIZE 16
 #define BITSTREAM_BUFFER_SIZE 2000000
 #define SYNC_TIMEOUT 600000
