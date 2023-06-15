@@ -1,4 +1,4 @@
-# decode_infer-on-GPU
+# decode-infer-on-GPU
 This sample shows how to use the oneAPI Video Processing Library (oneVPL) to perform a ***single and mulit-source*** video decode and preprocess and inference using OpenVINO to show the device surface sharing (zero copy), modified from the example in (oneVPL)[https://github.com/oneapi-src/oneVPL/tree/master/examples].
 
 ![vpl_ov](https://user-images.githubusercontent.com/91237924/201594545-16a056c0-8724-4562-a697-9d6eb46ab72b.png)
